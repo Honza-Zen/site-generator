@@ -3,8 +3,10 @@ from htmlnode import HTMLNode, LeafNode, ParentNode
 from block_markdown import markdown_to_html_node
 import os
 import shutil
+import sys
 
-PUBLIC_FOLDER = "./public"
+#PUBLIC_FOLDER = "./public"
+PUBLIC_FOLDER = "./docs"
 STATIC_FOLDER = "./static"
 CONTENT_FOLDER = "./content"
 
@@ -52,7 +54,7 @@ def extract_title(markdown_file):
         raise Exception("Title not found")
 
 
-def generate_page(from_path, template_path, dest_path):
+def generate_page(from_path, template_path, dest_path, basepath):
     print(f"Generating page from {from_path} to {dest_path} using {template_path}")
     
     with open(from_path, "r") as md_file:
@@ -63,58 +65,39 @@ def generate_page(from_path, template_path, dest_path):
             title = extract_title(from_path)
             template = template.replace("{{ Title }}", title)
             template = template.replace("{{ Content }}", html_content)
+            template = template.replace("href=\"/", f"href=\"{basepath}")
+            template = template.replace("src=\"/", f"src=\"{basepath}")
             dest_path = dest_path.replace(".md", ".html")
             with open(dest_path, "w") as file:
                 file.write(template)
 
-def generate_pages_recursive(dir_path_content, template_path, dest_dir_path):
+def generate_pages_recursive(dir_path_content, template_path, dest_dir_path, basepath):
     for file_name in os.listdir(dir_path_content):
         file_path = os.path.join(dir_path_content, file_name)
         dest_path = os.path.join(dest_dir_path, file_name)
         if os.path.isdir(file_path):
             check_folder_path(dest_path)
-            generate_pages_recursive(file_path, template_path, dest_path)
+            generate_pages_recursive(file_path, template_path, dest_path, basepath)
         elif file_name.endswith(".md"):
-            generate_page(file_path, template_path, dest_path)
+            generate_page(file_path, template_path, dest_path, basepath)
 
-def main():
+def main(args):
+    if len(args) < 2:
+        basepath = ""
+    else:
+        basepath = args[1]
+    
+    print(f"Basepath: {basepath}")
+
+    
+
     check_folder_path(PUBLIC_FOLDER)
     delete_folder_content(PUBLIC_FOLDER)
     copy_static_files(STATIC_FOLDER, PUBLIC_FOLDER)
 #    generate_page("content/index.md", "template.html", "public/index.html")
-    generate_pages_recursive(CONTENT_FOLDER, "template.html", PUBLIC_FOLDER)
+    generate_pages_recursive(CONTENT_FOLDER, "template.html", PUBLIC_FOLDER, basepath)
+    
 
 
 
-
-
-
-
-
-
-
-
-
-
-
-#     text_node = TextNode("Hello world", TextType.BOLD, "https://www.google.com")
-#     print(text_node)
-
-#     html_node = HTMLNode("div", "Hello world", ["a"], {"href": "https://www.google.com"})
-#     print(html_node)
-
-#     node = ParentNode(
-#     "p",
-#     [
-#         LeafNode("b", "Bold text"),
-#         LeafNode(None, "Normal text"),
-#         LeafNode("i", "italic text"),
-#         LeafNode(None, "Normal text"),
-#     ],
-# )
-
-#     print(node.to_html())
-
-
-
-main()
+main(sys.argv)
